@@ -1,11 +1,13 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { IProductInteractors } from "../../interfaces/product/IProductInteractors";
-import { MessageBroker } from "../../utils/broker/message.broker";
 import { ProductEvents } from "../../types";
 import redisClient from "../../utils/redis/redisClient";
 import { Product } from "../../entities/product";
+import { PrismaClient as CatalogPrismaClient } from "../../generated/prisma";
 
 import { eventLog } from "../../utils/eventLog";
+
+const catalogPrisma = new CatalogPrismaClient();
 
 const event = eventLog;
 const eventSource = "ProductService";
@@ -39,15 +41,13 @@ export class ProductController {
         payload: { product },
       });
 
-      await MessageBroker.publish({
-        topic: "ProductEvents",
-        event: ProductEvents.CREATE_PRODUCT,
-        headers: {
+      await catalogPrisma.catalogOutboxEvent.create({
+        data: {
+          eventType: ProductEvents.CREATE_PRODUCT,
           source: eventSource,
-          timestamp: new Date().toISOString(),
-        },
-        message: {
-          product,
+          payload: JSON.stringify({ product }),
+          topic: "ProductEvents",
+          key: ProductEvents.CREATE_PRODUCT,
         },
       });
 
@@ -131,14 +131,14 @@ export class ProductController {
         payload: prodUpdate,
       });
 
-      await MessageBroker.publish({
-        topic: "ProductEvents",
-        event: ProductEvents.UPDATE_STOCK,
-        headers: {
+      await catalogPrisma.catalogOutboxEvent.create({
+        data: {
+          eventType: ProductEvents.UPDATE_STOCK,
           source: eventSource,
-          timestamp: new Date().toISOString(),
+          payload: { productId: id, newStock: stock },
+          topic: "ProductEvents",
+          key: ProductEvents.UPDATE_STOCK,
         },
-        message: { productId: id, newStock: stock },
       });
 
       return reply

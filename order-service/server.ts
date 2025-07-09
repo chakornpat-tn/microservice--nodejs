@@ -6,8 +6,7 @@ import orderRouter from "./src/routes/order/orders.routes";
 import cartRouter from "./src/routes/cart/cart.routes";
 
 import config from "./src/config";
-import { MessageBroker } from "@/utils/broker/message.broker";
-import { Producer, Consumer } from "kafkajs";
+
 
 const server = fastify();
 const cfg = config();
@@ -41,11 +40,7 @@ const start = async () => {
       },
     });
 
-    // Kafka message broker setup
-    const producer = await MessageBroker.connectProducer<Producer>();
-    producer.on(producer.events.CONNECT, () =>
-      console.log("Producer connected")
-    );
+    
 
     // Move to message service
     //   const consumer = await MessageBroker.connectConsumer<Consumer>();

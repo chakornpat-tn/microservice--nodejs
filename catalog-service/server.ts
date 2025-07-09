@@ -1,8 +1,7 @@
 import fastify from "fastify";
 import productRouter from "./routes/product";
 import { PrismaClient } from "./generated/prisma";
-import { MessageBroker } from "./utils/broker/message.broker";
-import { Producer, Consumer } from "kafkajs";
+
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUI from "@fastify/swagger-ui";
 
@@ -44,11 +43,7 @@ const start = async () => {
       },
     });
     
-    // Kafka message broker setup
-    const producer = await MessageBroker.connectProducer<Producer>();
-    producer.on(producer.events.CONNECT, () =>
-      console.log("Producer connected")
-    );
+    
 
     // Move to message service 
     // const consumer = await MessageBroker.connectConsumer<Consumer>();

@@ -51,9 +51,21 @@ model OrderLineItem {
   id        Int      @id @default(autoincrement())
   itemName  String
   qty       Int
-  price     Decimal
+  price     Float
   orderId   Int
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model OrderOutboxEvent {
+  id          Int      @id @default(autoincrement())
+  eventType   String
+  source      String
+  payload     Json
+  timestamp   DateTime @default(now())
+  processed   Boolean  @default(false)
+  publishedAt DateTime?
+  topic       String
+  key         String
 }

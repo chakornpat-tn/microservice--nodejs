@@ -1,0 +1,21 @@
+generator orderClient {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/order"
+}
+
+datasource orderDb {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_ORDER")
+}
+
+model OrderOutboxEvent {
+  id          Int       @id @default(autoincrement())
+  eventType   String
+  source      String
+  payload     Json
+  timestamp   DateTime  @default(now())
+  processed   Boolean   @default(false)
+  publishedAt DateTime?
+  topic       String
+  key         String
+}

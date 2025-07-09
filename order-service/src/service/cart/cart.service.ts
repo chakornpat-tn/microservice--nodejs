@@ -4,7 +4,9 @@ import { Config } from "@/types/config/config.type";
 import { OrderEvents, TOPIC_TYPE } from "@/types/subscription.type";
 import { GetProductDetails } from "@/utils/broker/api";
 import { MessageBroker } from "@/utils/broker/message.broker";
-import { Kafka } from "kafkajs";
+import { PrismaClient as OrderPrismaClient } from "@/generated/prisma";
+
+const orderPrisma = new OrderPrismaClient();
 
 const eventSource = "OrderService";
 export const CreateCart = async (
@@ -28,15 +30,13 @@ export const CreateCart = async (
 
   const data = await repo.create(createCartRequest);
 
-  await MessageBroker.publish({
-    topic: "OrderEvents",
-    event: OrderEvents.CREATE_CART,
-    headers: {
+  await orderPrisma.orderOutboxEvent.create({
+    data: {
+      eventType: OrderEvents.CREATE_CART,
       source: eventSource,
-      timestamp: new Date().toISOString(),
-    },
-    message: {
-      data,
+      payload: { data },
+      topic: "OrderEvents",
+      key: OrderEvents.CREATE_CART,
     },
   });
 

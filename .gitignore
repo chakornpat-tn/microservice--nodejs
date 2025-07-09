@@ -1,5 +1,15 @@
-/db/grafana/*
+/db/grafana
 /message-service/node_modules
 /message-service/.env
+
 /catalog-service/node_modules
+/catalog-service/generated
+/catalog-service/.env
+
 /order-service/node_modules
+/order-service/src/generated
+/order-service/.env
+
+/outbox-service/node_modules
+/outbox-service/generated
+/outbox-service/.env

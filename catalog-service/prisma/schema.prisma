@@ -31,3 +31,15 @@ model EventLog {
   payload   Json 
   timestamp DateTime @default(now())
 }
+
+model CatalogOutboxEvent {
+  id          Int       @id @default(autoincrement())
+  eventType   String
+  source      String
+  payload     Json
+  timestamp   DateTime  @default(now())
+  processed   Boolean   @default(false)
+  publishedAt DateTime?
+  topic       String
+  key         String
+}

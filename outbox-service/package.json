@@ -1,0 +1,36 @@
+{
+  "name": "outbox-service",
+  "version": "1.0.0",
+  "description": "A cron job to process outbox events and publish them to Kafka.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node --env-file=./.env src/index.ts",
+    "dev": "node -r ts-node/register --env-file=./.env ./src/index.ts",
+    "prisma:generate:catalog": "npx prisma generate --schema=./prisma/catalog.prisma",
+    "prisma:generate:order": "npx prisma generate --schema=./prisma/order.prisma",
+    "prisma:generate": "npm-run-all --parallel prisma:generate:catalog prisma:generate:order"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.60.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.202.0",
+    "@opentelemetry/resources": "^2.0.1",
+    "@opentelemetry/sdk-node": "^0.202.0",
+    "@opentelemetry/semantic-conventions": "^1.34.0",
+    "@prisma/client": "^6.10.1",
+    "kafkajs": "^2.2.4",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "@types/node-cron": "^3.0.11",
+    "nodemon": "^3.1.4",
+    "npm-run-all": "^4.1.5",
+    "prisma": "^6.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
