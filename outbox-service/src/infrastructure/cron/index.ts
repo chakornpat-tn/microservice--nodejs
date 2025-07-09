@@ -3,7 +3,6 @@ import { ProcessOutboxEvents } from '../../application/useCases/processOutboxEve
 
 export function setupCron(processOutboxEvents: ProcessOutboxEvents) {
   cron.schedule('*/10 * * * * *', () => {
-    console.log('Running outbox event processing job...');
     processOutboxEvents.execute();
   });
 }

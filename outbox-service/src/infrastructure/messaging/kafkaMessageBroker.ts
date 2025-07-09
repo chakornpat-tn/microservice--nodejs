@@ -33,7 +33,7 @@ export class KafkaMessageBroker implements IMessageBroker {
       messages: [
         {
           key: event.key,
-          value: JSON.stringify(event.payload),
+          value: event.payload,
           headers: {
             eventType: event.eventType,
             source: event.source,
