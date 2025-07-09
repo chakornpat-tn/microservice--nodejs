@@ -28,19 +28,19 @@ export const CreateCart = async (
     price: product.price,
   };
 
-  const data = await repo.create(createCartRequest);
+  const productCart = await repo.create(createCartRequest);
 
   await orderPrisma.orderOutboxEvent.create({
     data: {
       eventType: OrderEvents.CREATE_CART,
       source: eventSource,
-      payload: { data },
+      payload: JSON.stringify({ productCart }),
       topic: "OrderEvents",
       key: OrderEvents.CREATE_CART,
     },
   });
 
-  return data;
+  return productCart;
 };
 
 export const GetCart = async (request: any, repo: CartRepositoryType) => {

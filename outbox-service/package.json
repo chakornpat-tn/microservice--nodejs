@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "ts-node --env-file=./.env src/index.ts",
-    "dev": "node -r ts-node/register --env-file=./.env ./src/index.ts",
+    "dev": "node -r ts-node/register -r @opentelemetry/auto-instrumentations-node/register --env-file=./.env ./src/index.ts",
     "prisma:generate:catalog": "npx prisma generate --schema=./prisma/catalog.prisma",
     "prisma:generate:order": "npx prisma generate --schema=./prisma/order.prisma",
     "prisma:generate": "npm-run-all --parallel prisma:generate:catalog prisma:generate:order"
