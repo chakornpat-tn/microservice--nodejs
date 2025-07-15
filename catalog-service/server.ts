@@ -1,9 +1,12 @@
 import fastify from "fastify";
 import productRouter from "./routes/product";
+import productQueue from "./messageQueue/product";
 import { PrismaClient } from "./generated/prisma";
 
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUI from "@fastify/swagger-ui";
+import { MessageBroker } from "./utils/broker/message.broker";
+import { Consumer } from "kafkajs";
 
 const server = fastify();
 const PORT = Number(process.env.PORT) || 8080;
@@ -42,19 +45,17 @@ const start = async () => {
         deepLinking: false,
       },
     });
-    
-    
 
-    // Move to message service 
-    // const consumer = await MessageBroker.connectConsumer<Consumer>();
-    // consumer.on(consumer.events.CONNECT, () =>
-    //   console.log("Consumer connected")
-    // );
+    // Move to message service
+    const consumer = await MessageBroker.connectConsumer<Consumer>();
+    consumer.on(consumer.events.CONNECT, () =>
+      console.log("Consumer connected")
+    );
 
-    // await MessageBroker.subscribe("ProductEvents", async (message) => {
-    //   console.log("Consumer received message:");
-    //   console.log("Message Received", message);
-    // });
+    await MessageBroker.subscribe( "ProductEvents", async (message) => {
+      if (!message.event) return;
+      await productQueue(message.event, { prisma });
+    });
 
     await server.register(productRouter, { prefix: "/product", prisma });
 
