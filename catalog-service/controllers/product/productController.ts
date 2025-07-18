@@ -193,7 +193,9 @@ export class ProductController {
         data: {
           eventType: ProductEvents.UPDATE_STOCK,
           source: eventSource,
-          payload: { productId: id, newStock: stock },
+          payload: JSON.stringify({
+            product: prodUpdate,
+          }),
           topic: "ProductEvents",
           key: ProductEvents.UPDATE_STOCK,
         },
