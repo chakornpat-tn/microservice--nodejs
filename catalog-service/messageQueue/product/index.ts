@@ -16,10 +16,9 @@ export default async function (
 
   switch (event) {
     case ProductEvents.CREATE_PRODUCT:
-      productQueueController.getProducts();
+      productQueueController.productKafkaEventCall();
       break;
     default:
-      console.log("No event found");
       break;
   }
 }

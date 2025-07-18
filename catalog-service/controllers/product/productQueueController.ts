@@ -7,8 +7,8 @@ export class ProductQueueController {
         this.interactor = interactor;
     }
 
-    getProducts = async()  => {
-        console.log("getProducts called");
+    productKafkaEventCall = async()  => {
+        console.log("Product Kafka Event Call");
     }   
 
 }
