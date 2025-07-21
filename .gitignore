@@ -3,6 +3,7 @@
 /message-service/.env
 
 /catalog-service/node_modules
+/catalog-service/coverage
 /catalog-service/generated
 /catalog-service/.env
 
