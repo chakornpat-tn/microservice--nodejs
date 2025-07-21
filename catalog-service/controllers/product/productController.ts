@@ -10,16 +10,16 @@ import { traceOperation } from "../../utils/Otel";
 
 import { eventLog } from "../../utils/eventLog";
 
-const catalogPrisma = new CatalogPrismaClient();
-
 const event = eventLog;
 const eventSource = "ProductService";
 
 export class ProductController {
   private interactor: IProductInteractors;
+  private prisma: CatalogPrismaClient;
 
-  constructor(interactor: IProductInteractors) {
+  constructor(interactor: IProductInteractors, prisma: CatalogPrismaClient) {
     this.interactor = interactor;
+    this.prisma = prisma;
   }
   onCreateProduct = async (request: FastifyRequest, reply: FastifyReply) => {
     const tracer = trace.getTracer("catalog-service");
@@ -80,7 +80,7 @@ export class ProductController {
           });
 
           await traceOperation("create-outbox-event", span, async () => {
-            await catalogPrisma.catalogOutboxEvent.create({
+            await this.prisma.catalogOutboxEvent.create({
               data: {
                 eventType: ProductEvents.CREATE_PRODUCT,
                 source: eventSource,
@@ -189,7 +189,7 @@ export class ProductController {
         payload: prodUpdate,
       });
 
-      await catalogPrisma.catalogOutboxEvent.create({
+      await this.prisma.catalogOutboxEvent.create({
         data: {
           eventType: ProductEvents.UPDATE_STOCK,
           source: eventSource,
