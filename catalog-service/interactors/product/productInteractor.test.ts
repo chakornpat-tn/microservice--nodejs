@@ -1,6 +1,18 @@
 import { Product } from "../../entities/product";
 import { IProductRepository } from "../../interfaces/product/IProductReposiotories";
 import { ProductInteractors } from "./productInteractor";
+import { PrismaClient } from "../../generated/prisma";
+
+jest.mock("../../utils/redis/redisClient", () => ({
+  get: jest.fn(),
+  set: jest.fn(),
+}));
+
+jest.mock("../../utils/eventLog", () => ({
+  eventLog: {
+    createEventLog: jest.fn(),
+  },
+}));
 
 const mockProductRepository: jest.Mocked<IProductRepository> = {
   create: jest.fn(),
@@ -9,12 +21,18 @@ const mockProductRepository: jest.Mocked<IProductRepository> = {
   update: jest.fn(),
 };
 
+const mockPrisma = {
+  catalogOutboxEvent: {
+    create: jest.fn(),
+  },
+} as unknown as jest.Mocked<PrismaClient>; 
+
 describe("ProductInteractors", () => {
   let interactor: ProductInteractors;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    interactor = new ProductInteractors(mockProductRepository);
+    interactor = new ProductInteractors(mockProductRepository, mockPrisma);
   });
 
   describe("createProduct", () => {
@@ -61,6 +79,21 @@ describe("ProductInteractors", () => {
         )
       ).rejects.toThrow("Database connection error");
       expect(mockProductRepository.create).toHaveBeenCalledWith(input);
+    });
+  });
+
+  describe("getProduct", () => {
+    test("should return a list of products", async () => {
+      const products: Product[] = [
+        { id: 1, name: "P1", description: "D1", price: 10, stock: 10 },
+        { id: 2, name: "P2", description: "D2", price: 20, stock: 20 },
+      ];
+      mockProductRepository.find.mockResolvedValue(products);
+
+      const result = await interactor.getProduct(2, 0);
+
+      expect(mockProductRepository.find).toHaveBeenCalledWith(2, 0);
+      expect(result).toEqual(products);
     });
   });
 

@@ -11,7 +11,7 @@ export default async function (
 ) {
   const { prisma } = options;
   const productRepository = new ProductRepository(prisma);
-  const productInteractors = new ProductInteractors(productRepository);
+  const productInteractors = new ProductInteractors(productRepository, prisma);
   const productQueueController = new ProductQueueController(productInteractors);
 
   switch (event) {
