@@ -11,8 +11,8 @@ export default async function (
 ) {
   const { prisma } = options;
   const productRepository = new ProductRepository(prisma);
-  const productInteractors = new ProductInteractors(productRepository);
-  const productController = new ProductController(productInteractors, prisma);
+  const productInteractors = new ProductInteractors(productRepository, prisma);
+  const productController = new ProductController(productInteractors);
 
   fastify.post(
     "/",

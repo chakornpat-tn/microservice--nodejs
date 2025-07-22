@@ -1,12 +1,22 @@
 import { Product } from "../../entities/product";
 import { IProductInteractors } from "../../interfaces/product/IProductInteractors";
 import { IProductRepository } from "../../interfaces/product/IProductReposiotories";
+import { PrismaClient as CatalogPrismaClient } from "../../generated/prisma";
+import redisClient from "../../utils/redis/redisClient";
+import { eventLog } from "../../utils/eventLog";
+import { ProductEvents } from "../../types";
+import { propagation, context, trace } from "@opentelemetry/api";
+
+const event = eventLog;
+const eventSource = "ProductService";
 
 export class ProductInteractors implements IProductInteractors {
   private repository: IProductRepository;
+  private prisma: CatalogPrismaClient;
 
-  constructor(repository: IProductRepository) {
+  constructor(repository: IProductRepository, prisma: CatalogPrismaClient) {
     this.repository = repository;
+    this.prisma = prisma;
   }
 
   async createProduct(
@@ -15,29 +25,140 @@ export class ProductInteractors implements IProductInteractors {
     price: number,
     stock: number
   ): Promise<Product> {
-    const product = { name, description, price, stock };
-    return this.repository.create(product);
+    const tracer = trace.getTracer("catalog-service");
+    return await tracer.startActiveSpan(
+      "ProductInteractor.createProduct",
+      async (span) => {
+        try {
+          const product = { name, description, price, stock };
+          const createdProduct = await this.repository.create(product);
+
+          const traceHeaders: Record<string, string> = {};
+          propagation.inject(context.active(), traceHeaders);
+
+          await event.createEventLog({
+            source: eventSource,
+            eventType: ProductEvents.CREATE_PRODUCT,
+            payload: { product: createdProduct },
+          });
+
+          await this.prisma.catalogOutboxEvent.create({
+            data: {
+              eventType: ProductEvents.CREATE_PRODUCT,
+              source: eventSource,
+              payload: JSON.stringify({
+                product: createdProduct,
+                traceContext: traceHeaders,
+              }),
+              topic: "ProductEvents",
+              key: ProductEvents.CREATE_PRODUCT,
+            },
+          });
+
+          return createdProduct;
+        } catch (error) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      }
+    );
   }
 
   async getProduct(limit: number, offset: number): Promise<Product[]> {
-    return this.repository.find(limit, offset);
+    const tracer = trace.getTracer("catalog-service");
+    return await tracer.startActiveSpan(
+      "ProductInteractor.getProduct",
+      async (span) => {
+        try {
+          return this.repository.find(limit, offset);
+        } catch (error) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      }
+    );
   }
 
   async getProductById(id: number): Promise<Product | null> {
-    return this.repository.getById(id);
+    const tracer = trace.getTracer("catalog-service");
+    return await tracer.startActiveSpan(
+      "ProductInteractor.getProductById",
+      async (span) => {
+        try {
+          const cacheKey = `product:${id}`;
+          const cachedProduct = await redisClient.get(cacheKey);
+          if (cachedProduct) {
+            return JSON.parse(cachedProduct) as Product;
+          }
+
+          const product = await this.repository.getById(id);
+          if (product) {
+            await redisClient.set(
+              cacheKey,
+              JSON.stringify(product),
+              "EX",
+              3600
+            );
+          }
+          return product;
+        } catch (error) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      }
+    );
   }
 
   async updateStock(id: number, stock: number): Promise<Product> {
-    if (stock < 0) {
-      throw new Error("Stock cannot be negative");
-    }
+    const tracer = trace.getTracer("catalog-service");
+    return await tracer.startActiveSpan(
+      "ProductInteractor.updateStock",
+      async (span) => {
+        try {
+          if (stock < 0) {
+            throw new Error("Stock cannot be negative");
+          }
 
-    const product = await this.repository.getById(id);
-    if (!product) {
-      throw new Error(`Product with id ${id} not found`);
-    }
+          const product = await this.repository.getById(id);
+          if (!product) {
+            throw new Error(`Product with id ${id} not found`);
+          }
 
-    const updatedProduct = { ...product, stock };
-    return this.repository.update(updatedProduct);
+          const updatedProduct = { ...product, stock };
+          const prodUpdate = await this.repository.update(updatedProduct);
+
+          await event.createEventLog({
+            source: eventSource,
+            eventType: ProductEvents.UPDATE_STOCK,
+            payload: prodUpdate,
+          });
+
+          await this.prisma.catalogOutboxEvent.create({
+            data: {
+              eventType: ProductEvents.UPDATE_STOCK,
+              source: eventSource,
+              payload: JSON.stringify({
+                product: prodUpdate,
+              }),
+              topic: "ProductEvents",
+              key: ProductEvents.UPDATE_STOCK,
+            },
+          });
+
+          return prodUpdate;
+        } catch (error) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      }
+    );
   }
 }
