@@ -3,11 +3,10 @@ import { IProductInteractors } from "../../interfaces/product/IProductInteractor
 import { IProductRepository } from "../../interfaces/product/IProductReposiotories";
 import { PrismaClient as CatalogPrismaClient } from "../../generated/prisma";
 import redisClient from "../../utils/redis/redisClient";
-import { eventLog } from "../../utils/eventLog";
+import { createEventLog } from "../../utils/eventLog/eventStore";
 import { ProductEvents } from "../../types";
 import { propagation, context, trace } from "@opentelemetry/api";
 
-const event = eventLog;
 const eventSource = "ProductService";
 
 export class ProductInteractors implements IProductInteractors {
@@ -36,10 +35,10 @@ export class ProductInteractors implements IProductInteractors {
           const traceHeaders: Record<string, string> = {};
           propagation.inject(context.active(), traceHeaders);
 
-          await event.createEventLog({
+          await createEventLog({
             source: eventSource,
             eventType: ProductEvents.CREATE_PRODUCT,
-            payload: { product: createdProduct },
+            payload: { data: createdProduct },
           });
 
           await this.prisma.catalogOutboxEvent.create({
@@ -133,10 +132,10 @@ export class ProductInteractors implements IProductInteractors {
           const updatedProduct = { ...product, stock };
           const prodUpdate = await this.repository.update(updatedProduct);
 
-          await event.createEventLog({
+          await createEventLog({
             source: eventSource,
             eventType: ProductEvents.UPDATE_STOCK,
-            payload: prodUpdate,
+            payload: { data: prodUpdate },
           });
 
           await this.prisma.catalogOutboxEvent.create({

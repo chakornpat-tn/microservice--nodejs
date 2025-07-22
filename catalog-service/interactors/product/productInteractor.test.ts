@@ -8,10 +8,8 @@ jest.mock("../../utils/redis/redisClient", () => ({
   set: jest.fn(),
 }));
 
-jest.mock("../../utils/eventLog", () => ({
-  eventLog: {
-    createEventLog: jest.fn(),
-  },
+jest.mock("../../utils/eventLog/eventStore", () => ({
+  createEventLog: jest.fn(),
 }));
 
 const mockProductRepository: jest.Mocked<IProductRepository> = {
