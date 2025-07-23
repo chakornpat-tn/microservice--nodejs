@@ -6,7 +6,7 @@ import {
 } from "@kurrent/kurrentdb-client";
 
 const client = KurrentDBClient.connectionString`
-  esdb://localhost:2113?tls=false
+  kurrentdb://localhost:2113?tls=false
 `;
 
 export interface IEventLog {
