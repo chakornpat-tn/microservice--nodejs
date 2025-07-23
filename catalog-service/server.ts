@@ -2,6 +2,7 @@ import fastify from "fastify";
 import productRouter from "./routes/product";
 import productQueue from "./messageQueue/product";
 import { PrismaClient } from "./generated/prisma";
+import { Counter, Registry, collectDefaultMetrics } from "prom-client";
 
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUI from "@fastify/swagger-ui";
@@ -13,6 +14,30 @@ const PORT = Number(process.env.PORT) || 8080;
 export async function buildApp() {
   const server = fastify();
   const prisma = new PrismaClient();
+
+  const register = new Registry();
+  collectDefaultMetrics({ register });
+
+  const httpRequestCounter = new Counter({
+    name: "http_requests_total",
+    help: "Total number of HTTP requests",
+    labelNames: ["method", "route", "status_code"],
+  });
+
+  register.registerMetric(httpRequestCounter);
+
+  server.addHook("onResponse", async (request, reply) => {
+    httpRequestCounter.inc({
+      method: request.method,
+      route: request.routeOptions.url || request.url,
+      status_code: reply.statusCode.toString(),
+    });
+  });
+
+  server.get("/metrics", async (request, reply) => {
+    reply.header("Content-Type", register.contentType);
+    reply.send(await register.metrics());
+  });
 
   server.get("/ping", async (request, reply) => {
     return "pong\n";
@@ -44,7 +69,6 @@ export async function buildApp() {
     },
   });
 
-  // Move to message service
   const consumer = await MessageBroker.connectConsumer<Consumer>();
   consumer.on(consumer.events.CONNECT, () =>
     console.log("Consumer connected")
