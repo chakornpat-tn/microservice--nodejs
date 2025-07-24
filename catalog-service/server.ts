@@ -1,12 +1,16 @@
-import fastify from "fastify";
+import fastify, { FastifyInstance } from "fastify";
 import productRouter from "./routes/product";
 import productQueue from "./messageQueue/product";
 import { PrismaClient } from "./generated/prisma";
-import { Counter, Registry, collectDefaultMetrics } from "prom-client";
+import {
+  recordHttpRequest,
+  getMetrics,
+  metricsContentType,
+} from "./pkg/promClient";
 
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUI from "@fastify/swagger-ui";
-import { MessageBroker } from "./utils/broker/message.broker";
+import { MessageBroker } from "./pkg/broker/message.broker";
 import { Consumer } from "kafkajs";
 
 const PORT = Number(process.env.PORT) || 8080;
@@ -15,29 +19,7 @@ export async function buildApp() {
   const server = fastify();
   const prisma = new PrismaClient();
 
-  const register = new Registry();
-  collectDefaultMetrics({ register });
-
-  const httpRequestCounter = new Counter({
-    name: "http_requests_total",
-    help: "Total number of HTTP requests",
-    labelNames: ["method", "route", "status_code"],
-  });
-
-  register.registerMetric(httpRequestCounter);
-
-  server.addHook("onResponse", async (request, reply) => {
-    httpRequestCounter.inc({
-      method: request.method,
-      route: request.routeOptions.url || request.url,
-      status_code: reply.statusCode.toString(),
-    });
-  });
-
-  server.get("/metrics", async (request, reply) => {
-    reply.header("Content-Type", register.contentType);
-    reply.send(await register.metrics());
-  });
+  await setupMetrics(server);
 
   server.get("/ping", async (request, reply) => {
     return "pong\n";
@@ -70,9 +52,7 @@ export async function buildApp() {
   });
 
   const consumer = await MessageBroker.connectConsumer<Consumer>();
-  consumer.on(consumer.events.CONNECT, () =>
-    console.log("Consumer connected")
-  );
+  consumer.on(consumer.events.CONNECT, () => console.log("Consumer connected"));
 
   await MessageBroker.subscribe("ProductEvents", async (message) => {
     if (!message.event) return;
@@ -82,6 +62,21 @@ export async function buildApp() {
   await server.register(productRouter, { prefix: "/product", prisma });
 
   return { server, prisma };
+}
+
+async function setupMetrics(server: FastifyInstance) {
+  server.addHook("onResponse", async (request, reply) => {
+    recordHttpRequest(
+      request.method,
+      request.routeOptions.url || request.url,
+      reply.statusCode
+    );
+  });
+
+  server.get("/metrics", async (request, reply) => {
+    reply.header("Content-Type", metricsContentType);
+    reply.send(await getMetrics());
+  });
 }
 
 if (require.main === module) {

@@ -1,23 +1,25 @@
-import fastify from "fastify";
+import fastify, { FastifyInstance } from "fastify";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUI from "@fastify/swagger-ui";
 
 import orderRouter from "./src/routes/order/orders.routes";
 import cartRouter from "./src/routes/cart/cart.routes";
 
-import config from "./src/config";
+import { recordHttpRequest, getMetrics, metricsContentType } from "@/utils/promClient";
 
+import config from "./src/config";
 
 const server = fastify();
 const cfg = config();
+
 const start = async () => {
+  await setupMetrics(server);
   try {
-    // Register Swagger
     await server.register(fastifySwagger, {
       swagger: {
         info: {
-          title: "Catalog Service API",
-          description: "API documentation for the Catalog Microservice",
+          title: "Order Service API",
+          description: "API documentation for the Order Microservice",
           version: "1.0.0",
         },
         externalDocs: {
@@ -40,24 +42,6 @@ const start = async () => {
       },
     });
 
-    
-
-    // Move to message service
-    //   const consumer = await MessageBroker.connectConsumer<Consumer>();
-    //   try {
-    //     consumer.on(consumer.events.CONNECT, () =>
-    //       console.log("Consumer connected")
-    //     );
-    //   } catch (error) {
-    //     console.error("Consumer connection error:", error);
-    //     throw error;
-    //   }
-
-    // await MessageBroker.subscribe("OrderEvents", async (message) => {
-    //   console.log("Consumer received message:");
-    //   console.log("Message Received", message);
-    // });
-
     await server.register(cartRouter, { prefix: "/cart", ...cfg });
     await server.register(orderRouter, { prefix: "/order" });
 
@@ -72,5 +56,20 @@ const start = async () => {
     // await prisma.$disconnect();
   }
 };
+
+async function setupMetrics(server: FastifyInstance) {
+  server.addHook("onResponse", async (request, reply) => {
+    recordHttpRequest(
+      request.method,
+      request.routeOptions.url || request.url,
+      reply.statusCode
+    );
+  });
+
+  server.get("/metrics", async (request, reply) => {
+    reply.header("Content-Type", metricsContentType);
+    reply.send(await getMetrics());
+  });
+}
 
 start();
