@@ -2,8 +2,8 @@ import { Product } from "../../entities/product";
 import { IProductInteractors } from "../../interfaces/product/IProductInteractors";
 import { IProductRepository } from "../../interfaces/product/IProductReposiotories";
 import { PrismaClient as CatalogPrismaClient } from "../../generated/prisma";
-import redisClient from "../../utils/redis/redisClient";
-import { createEventLog } from "../../utils/eventLog/eventStore";
+import redisClient from "../../pkg/redis/redisClient";
+import { createEventLog } from "../../pkg/eventLog/eventStore";
 import { ProductEvents } from "../../types";
 import { propagation, context, trace } from "@opentelemetry/api";
 

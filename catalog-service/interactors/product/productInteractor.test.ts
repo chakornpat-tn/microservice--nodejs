@@ -3,12 +3,12 @@ import { IProductRepository } from "../../interfaces/product/IProductReposiotori
 import { ProductInteractors } from "./productInteractor";
 import { PrismaClient } from "../../generated/prisma";
 
-jest.mock("../../utils/redis/redisClient", () => ({
+jest.mock("../../pkg/redis/redisClient", () => ({
   get: jest.fn(),
   set: jest.fn(),
 }));
 
-jest.mock("../../utils/eventLog/eventStore", () => ({
+jest.mock("../../pkg/eventLog/eventStore", () => ({
   createEventLog: jest.fn(),
 }));
 

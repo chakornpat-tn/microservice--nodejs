@@ -2,7 +2,7 @@ import supertest from "supertest";
 import { FastifyInstance } from "fastify";
 import { PrismaClient } from "../../generated/prisma";
 
-jest.mock("../../utils/broker/message.broker", () => ({
+jest.mock("../../pkg/broker/message.broker", () => ({
   MessageBroker: {
     connectConsumer: jest.fn().mockResolvedValue({
       on: jest.fn(),
@@ -14,13 +14,13 @@ jest.mock("../../utils/broker/message.broker", () => ({
   },
 }));
 
-jest.mock("../../utils/eventLog", () => ({
+jest.mock("../../pkg/eventLog", () => ({
   eventLog: {
     createEventLog: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
-jest.mock("../../utils/redis/redisClient", () => ({
+jest.mock("../../pkg/redis/redisClient", () => ({
   __esModule: true,
   default: {
     get: jest.fn().mockResolvedValue(null),
