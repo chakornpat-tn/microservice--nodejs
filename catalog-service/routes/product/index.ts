@@ -3,7 +3,11 @@ import { ProductController } from "../../controllers/product/productController";
 import { ProductRepository } from "../../repositories/product/productRepository";
 import { ProductInteractors } from "../../interactors/product/productInteractor";
 import { PrismaClient } from "../../generated/prisma";
-import { createProductSchema, getProductsSchema, updateStockSchema } from "./schemas";
+import {
+  createProductSchema,
+  getProductsSchema,
+  updateStockSchema,
+} from "./schemas";
 
 export default async function (
   fastify: FastifyInstance,
@@ -23,7 +27,7 @@ export default async function (
     "/",
     { schema: updateStockSchema },
     productController.onUpdateStock
-  )
+  );
 
   fastify.get(
     "/",
@@ -32,4 +36,8 @@ export default async function (
     productController.onGetProducts
   );
   fastify.get("/:id", productController.onGetProductById);
+  fastify.get(
+    "/:id/discounted-price",
+    productController.onGetProductWithDiscountPriceById
+  );
 }

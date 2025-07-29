@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { IProductInteractors } from "../../interfaces/product/IProductInteractors";
+import { createProductRequest } from "../../entities/product";
 
 export class ProductController {
   private interactor: IProductInteractors;
@@ -9,19 +10,9 @@ export class ProductController {
   }
   onCreateProduct = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { name, description, price, stock } = request.body as {
-        name: string;
-        description: string;
-        price: number;
-        stock: number;
-      };
+      const req = request.body as createProductRequest;
 
-      const product = await this.interactor.createProduct(
-        name,
-        description,
-        price,
-        stock
-      );
+      const product = await this.interactor.createProduct(req);
 
       return reply.status(200).send({
         message: "product created successfully",
@@ -90,6 +81,30 @@ export class ProductController {
     } catch (error) {
       console.log(error);
       reply.status(500).send({ error: "update stock failed" });
+    }
+  };
+
+  onGetProductWithDiscountPriceById = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => {
+    try {
+      const { id } = request.params as { id: string };
+      const parsedId = parseInt(id);
+
+      if (isNaN(parsedId)) {
+        return reply.status(400).send({ error: "Invalid product ID" });
+      }
+
+      const prodWithDiscount = await this.interactor.getProdPriceWithDiscount(parsedId);
+
+      return reply.status(200).send({
+        message: "product retrieved successfully",
+        data: prodWithDiscount,
+      });
+    } catch (error) {
+      console.log(error);
+      reply.status(500).send({ error: "get product by id failed" });
     }
   };
 }

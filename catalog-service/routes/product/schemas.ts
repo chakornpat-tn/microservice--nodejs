@@ -10,6 +10,7 @@ export const createProductSchema = {
       description: { type: "string", description: "Detailed description of the product" },
       price: { type: "number", description: "Price of the product" },
       stock: { type: "integer", description: "Available stock quantity" },
+      discountFormula:{type: "string", description: "Discount formula for the product" },
     },
   },
   response: {
@@ -26,6 +27,7 @@ export const createProductSchema = {
             description: { type: "string" },
             price: { type: "number" },
             stock: { type: "integer" },
+            discountFormula:{type:"string"},
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
           },

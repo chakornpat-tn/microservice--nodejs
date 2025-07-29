@@ -53,12 +53,7 @@ describe("ProductInteractors", () => {
       const product = makeProduct(input);
       mockProductRepo.create.mockResolvedValue(product);
 
-      const result = await sut.createProduct(
-        input.name,
-        input.description,
-        input.price,
-        input.stock
-      );
+      const result = await sut.createProduct(input);
 
       expect(mockProductRepo.create).toHaveBeenCalledWith(input);
       expect(result).toEqual(product);
@@ -69,14 +64,7 @@ describe("ProductInteractors", () => {
       const error = new Error("DB failed");
       mockProductRepo.create.mockRejectedValue(error);
 
-      await expect(
-        sut.createProduct(
-          input.name,
-          input.description,
-          input.price,
-          input.stock
-        )
-      ).rejects.toThrow(error);
+      await expect(sut.createProduct(input)).rejects.toThrow(error);
     });
   });
 

@@ -15,20 +15,21 @@ datasource db {
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String
-  price       Float
-  stock       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String
+  price           Float
+  stock           Int
+  discountFormula String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model EventLog {
   id        Int      @id @default(autoincrement())
   eventType String
   source    String
-  payload   Json 
+  payload   Json
   timestamp DateTime @default(now())
 }
 

@@ -1,4 +1,8 @@
-import { Product } from "../../entities/product";
+import {
+  createProductRequest,
+  Product,
+  productWithDiscountPriceResponse,
+} from "../../entities/product";
 import { IProductInteractors } from "../../interfaces/product/IProductInteractors";
 import { IProductRepository } from "../../interfaces/product/IProductReposiotories";
 import { PrismaClient as CatalogPrismaClient } from "../../generated/prisma";
@@ -6,6 +10,7 @@ import redisClient from "../../pkg/redis/redisClient";
 import { createEventLog } from "../../pkg/eventLog/eventStore";
 import { ProductEvents } from "../../types";
 import { propagation, context, trace } from "@opentelemetry/api";
+import { parseSync } from "sformula";
 
 const eventSource = "ProductService";
 
@@ -18,19 +23,15 @@ export class ProductInteractors implements IProductInteractors {
     this.prisma = prisma;
   }
 
-  async createProduct(
-    name: string,
-    description: string,
-    price: number,
-    stock: number
-  ): Promise<Product> {
+  async createProduct(request: createProductRequest): Promise<Product> {
     const tracer = trace.getTracer("catalog-service");
     return await tracer.startActiveSpan(
       "ProductInteractor.createProduct",
       async (span) => {
         try {
-          const product = { name, description, price, stock };
-          const createdProduct = await this.repository.create(product);
+          const createdProduct = await this.repository.create({
+            ...request,
+          });
 
           const traceHeaders: Record<string, string> = {};
           propagation.inject(context.active(), traceHeaders);
@@ -159,5 +160,31 @@ export class ProductInteractors implements IProductInteractors {
         }
       }
     );
+  }
+  async getProdPriceWithDiscount(
+    id: number
+  ): Promise<productWithDiscountPriceResponse> {
+    const prod = await this.getProductById(id);
+    if (!prod) throw new Error("Product not found");
+    if (!prod.discountFormula) throw new Error("No discount formula provided");
+    try {
+      const formula = parseSync(prod.discountFormula, {
+        inputTypes: {
+          price: { type: "number" },
+          stock: { type: "number" },
+        },
+      });
+
+      const result = {
+        ...prod,
+        price: formula.evaluate({ price: prod.price, stock: prod.stock }),
+      } as productWithDiscountPriceResponse;
+
+      return result;
+    } catch (err: any) {
+      throw new Error(
+        `Error calculating product price with discount: ${err.message}`
+      );
+    }
   }
 }
