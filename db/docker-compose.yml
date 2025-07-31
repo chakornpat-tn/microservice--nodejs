@@ -52,6 +52,15 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: catalog
 
+  user-db:
+    image: postgres:latest
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user
+
   redis:
     image: redis:alpine
     ports:
